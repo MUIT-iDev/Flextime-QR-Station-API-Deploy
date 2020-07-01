@@ -17,7 +17,7 @@ class CreatePersonalsTable extends Migration
 
         Schema::create('personals', function (Blueprint $table) {
             $table->uuid('id')->unique();
-            $table->string('hriId', 18);
+            $table->string('hriId', 50);
             $table->string('pid', 13);
             $table->string('name', 150);
             $table->string('surname', 150);

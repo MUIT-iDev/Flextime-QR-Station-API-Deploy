@@ -173,7 +173,7 @@ class ScheduleController extends Controller
                 $persons = $this->getPersonalAPI();
 
                 $result[] = 'Insert Personal Card <';
-
+                $this->clearAllPersonalDB();
                 foreach($persons as $p) {
                     $this->updatePersonalDB($p);
                     $result[] = $p->cardId.', ';                  
