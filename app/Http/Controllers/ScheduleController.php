@@ -264,7 +264,7 @@ class ScheduleController extends Controller
 
     private function timeToSync($now, $time, $period) {
         $diff_min = $this->getDiffMin($now, $time);
-        return $period < $diff_min;
+        return $period <= $diff_min;
     }
     private function getDiffMin($now, $time) {
         $diff_config = $now->diff($time);
