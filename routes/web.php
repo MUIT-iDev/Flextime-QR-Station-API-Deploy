@@ -11,7 +11,7 @@
 |
 */
 
-$router->get('/', function () use ($router) {
+$router->get('/api', function () use ($router) {
     $result = 'Flextime QR Scanner Station';
     $result .= '<br/>API v.'.env('APP_VERSION');
     $result .= '<br/>Power by ';
