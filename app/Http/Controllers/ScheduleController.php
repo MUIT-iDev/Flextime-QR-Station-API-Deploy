@@ -27,11 +27,6 @@ class ScheduleController extends Controller
             $api_version = env('APP_VERSION');
             $online_status = false;
             $station_active = false;
-            //$resp = $this->checkOnlineStatusAPI();
-            //if ($resp != null) {
-            //    $online_status = true;
-            //    $station_active = $resp->active;
-            //}
             $online_status = $this->getStationOnlineStatus();
             $station_active = $this->getStationActiveStatus();
             $person_on_station_count = $this->getPersonalCount();
@@ -85,6 +80,9 @@ class ScheduleController extends Controller
         $personal_sync = new \DateTime();
         $config_period = 0;
         $personal_period = 0;
+        $station_active = 'true';
+        $flex_sync = new \DateTime();
+        $flex_period = 0;
         foreach($configs as $c) {
             switch($c->name) {
                 case "SYNC_CONFIG_PERIOD": 
@@ -99,6 +97,16 @@ class ScheduleController extends Controller
                 case "SYNC_PERSONALS_PERIOD_lastProcess": 
                     $personal_sync->setTimestamp($c->value);
                     break;
+
+                case "STATION_ACTIVE": 
+                    $station_active = $c->value;
+                    break;
+                case "FLEX_CHECKHAND_PERIOD": 
+                    $flex_period = $c->value;
+                    break;
+                case "FLEX_CHECKHAND_PERIOD_lastProcess": 
+                    $flex_sync->setTimestamp($c->value);
+                    break;
                 default: 
                     break;
             }
@@ -108,18 +116,70 @@ class ScheduleController extends Controller
         $is_admin = $mode == 'admin' ? true : false;
         $is_sync_config = $this->timeToSync($now, $config_sync, intval($config_period));
         $is_sync_personal = $this->timeToSync($now, $personal_sync, intval($personal_period));
+        $is_checkhand_flex = $this->timeToSync($now, $flex_sync, intval($flex_period));
 
-        
+        if ($is_checkhand_flex) {
+            $result[] = $this->checkhandWithFlexServer();
+        }
+
         if ($is_admin || (!$is_admin && $is_sync_config)) {
             $result[] = $this->setConfigFn();
         }
 
-        if ($is_admin || (!$is_admin && $is_sync_personal)) {
+        if (($is_admin || (!$is_admin && $is_sync_personal)) && ($station_active === 'true')) {
             $result[] = '<br/>';
             $result[] = $this->setPersonalFn();
         }
       
         $result[] = '<br/>End Process: '.date('Y-m-d H:i:s.u');
+        return implode(' ', $result);
+    }
+
+    private function checkhandWithFlexServer() {
+        $result = [];
+        try {
+            $configs[] = json_decode('{
+                "key": "FLEX_CHECKHAND_PERIOD_lastProcess",
+                "value": '.time().'
+            }');
+
+            $resp = $this->checkOnlineStatusAPI();
+            if ($resp != null) {
+                $configs[] = json_decode('{
+                    "key": "STATION_ACTIVE",
+                    "value": '.$resp->active.'
+                }');
+                $configs[] = json_decode('{
+                    "key": "STATION_ONLINE",
+                    "value": "true"
+                }');
+            } else {
+                $configs[] = json_decode('{
+                    "key": "STATION_ONLINE",
+                    "value": "false"
+                }');
+            }
+                
+            $result[] = 'Update CheckHandFlex Config <';
+            DB::beginTransaction();
+            foreach($configs as $c) {
+                $this->updateConfigDB(
+                    isset($c->key) ? $c->key : null, 
+                    isset($c->value) ? $c->value : null, 
+                    isset($c->options) ? $c->options : null,
+                    isset($c->lastUpdate) ? $c->lastUpdate : null
+                );
+                $result[] = $c->key.', ';
+            }
+            DB::commit();
+            $result[] = '> Success';
+                
+        } catch (\PDOException $e) {
+            // Woopsy
+            DB::rollBack();
+            $result[] = "<br />Error: $e";
+        }
+            
         return implode(' ', $result);
     }
 
