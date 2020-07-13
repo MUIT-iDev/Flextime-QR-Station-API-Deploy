@@ -149,7 +149,7 @@ class ScheduleController extends Controller
             if ($resp != null) {
                 $configs[] = json_decode('{
                     "key": "STATION_ACTIVE",
-                    "value": '.($resp->active ? 'true' : 'false').'
+                    "value": '.($resp->active ? '"true"' : '"false"').'
                 }');
                 $configs[] = json_decode('{
                     "key": "STATION_ONLINE",
