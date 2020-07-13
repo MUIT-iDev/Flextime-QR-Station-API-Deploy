@@ -59,6 +59,8 @@ class ScheduleController extends Controller
                 $c->value
             );
 
+            //start thread station detroy if start active = false
+
         } catch (\Exception $e) {
             $result = array(
                 'status' => false,
@@ -147,12 +149,17 @@ class ScheduleController extends Controller
             if ($resp != null) {
                 $configs[] = json_decode('{
                     "key": "STATION_ACTIVE",
-                    "value": '.$resp->active.'
+                    "value": '.($resp->active ? 'true' : 'false').'
                 }');
                 $configs[] = json_decode('{
                     "key": "STATION_ONLINE",
                     "value": "true"
                 }');
+
+                //$trans_offline_queue = $this->getTransactionOfflineQueue();
+                //if (count($trans_offline_queue) > 0) {
+                    //create thread to send data
+                //}
             } else {
                 $configs[] = json_decode('{
                     "key": "STATION_ONLINE",

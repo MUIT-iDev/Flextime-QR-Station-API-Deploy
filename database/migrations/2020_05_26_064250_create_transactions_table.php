@@ -20,7 +20,7 @@ class CreateTransactionsTable extends Migration
             $table->string('cardId', 30);
             $table->dateTime('scanTime');
             $table->string('scanDetail');
-            $table->string('hriId', 18)->nullable();
+            $table->string('hriId', 50)->nullable();
             $table->string('latitude', 30)->nullable();
             $table->string('longtitude', 30)->nullable();
             $table->string('expireDate', 10)->nullable();

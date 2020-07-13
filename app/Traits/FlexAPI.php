@@ -5,10 +5,11 @@ namespace App\Traits;
 use GuzzleHttp\Client;
 use App\Traits\TransactionTrait;
 use App\Traits\PersonalTrait;
+use App\Traits\ConfigTrait;
 
 trait FlexAPI
 {
-    use TransactionTrait, PersonalTrait;
+    use TransactionTrait, PersonalTrait, ConfigTrait;
 
     private function getGuzzleHttpClient() {
         $domain = $this->getFlexDomain();
@@ -170,9 +171,14 @@ trait FlexAPI
         $promise = $client->postAsync(
             "stationService/v1/setTimeStamp/$stationId/$nonce", 
             ['json' => $data, 'debug' => fopen('php://stderr', 'w'), 'timeout' => 1]
-        )->then(function ($res) {
-            return json_decode($res->getBody()->getContents());  
-        });
+        )->then(
+            function ($res) {
+                return json_decode($res->getBody()->getContents());  
+            },
+            function (RequestException $e) {
+                $this->updateConfigDB("STATION_ONLINE", "false", null, null);
+            }
+        );
         $flex_resp = $promise->wait();
 
         if ($flex_resp->status == 'OK') {
@@ -183,6 +189,57 @@ trait FlexAPI
         $tmp = explode(" ", $tran->scanTime);
         return array(
             "Real" => true,
+            "Data" => array(
+                array(
+                "CardId" => $tran->cardId,
+                "HRiId" => $tran->hriId,
+                "PID" => $person == null ? null : $person->pid,
+                "NameSurname" => $person == null ? null : $person->name.' '.$person->surname,
+                "Date" => $tmp[0],
+                "Time" => $tmp[1],
+                "DateTime" => $tran->scanTime,
+                "TimeDiffSec" => $tran->timeDiffSec,
+                "INOUT" => $tran->scanStatus,
+                "Detail" => $tran->scanDetail,
+                "Lat" => $tran->latitude,
+                "Long" => $tran->longtitude,
+                )
+            )
+        );
+    }
+
+    public function sendTransactionQueueAPI() {
+        $stationId = $this->getStationID();
+        $nonce = $this->getNonce();
+        
+        $data = $this->genTransactionForFlexQueue($tran_id_list);
+
+        $client = $this->getGuzzleHttpClient();
+
+        // Send an asynchronous request.
+        $promise = $client->postAsync(
+            "stationService/v1/setTimeStamp/$stationId/$nonce", 
+            ['json' => $data, 'debug' => fopen('php://stderr', 'w'), 'timeout' => 1]
+        )->then(
+            function ($res) {
+                return json_decode($res->getBody()->getContents());  
+            },
+            function (RequestException $e) {
+                $this->updateConfigDB("STATION_ONLINE", "false", null, null);
+            }
+        );
+        $flex_resp = $promise->wait();
+
+        if ($flex_resp->status == 'OK') {
+            $this->updateSendQueueSuccessStatus($tran_id_list);
+        }
+    }
+    private function genTransactionForFlexQueue(&$tran_id_list) {
+        return array();
+
+        $tmp = explode(" ", $tran->scanTime);
+        return array(
+            "Real" => false,
             "Data" => array(
                 array(
                 "CardId" => $tran->cardId,

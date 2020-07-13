@@ -59,4 +59,8 @@ trait TransactionTrait
         return Transaction::count();
     }
 
+    public function getTransactionOfflineQueue() {
+        return Transaction::select('id')->where('sendStatus', '=', false)->get();
+    }
+
 }
