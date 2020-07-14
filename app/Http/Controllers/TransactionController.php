@@ -60,7 +60,7 @@ class TransactionController extends Controller
          if ($error == null) $this->isQRExpire($tran, $error);
          $rtran = $this->insertTransactionDB($tran);
          // call thread to send data
-         $this->sendTransactionRealAPI($tran, $person, $rtran->id);
+         //$this->sendTransactionRealAPI($tran, $person, $rtran->id);
 
          if ($error == null) {
             $scan_time = \DateTime::createFromFormat('Y-m-d H:i:s', $tran->scanTime);
@@ -118,16 +118,41 @@ class TransactionController extends Controller
             $qr = str_replace('\000026', "", $qr);
          }
    
-         $tmp = explode("Enter", $qr);
-         //\000026aaaaaaaaaaaaaa0003Enter13.793987Enter100.321535Enter14:24:55Enter19/05/2020EnterUNI_MQR
-         //HRi_ID, Latitude, Longitude, Expire_Time, Expire_Date, Code
+         if (stripos($qr, "Enter")) {
+            $tmp = explode("Enter", $qr);
+            //\000026aaaaaaaaaaaaaa0003Enter13.793987Enter100.321535Enter14:24:55Enter19/05/2020EnterUNI_MQR
+            //HRi_ID, Latitude, Longitude, Expire_Time, Expire_Date, Code
 
-         $tran->hriId = $tmp[0];
-         $tran->latitude = $tmp[1];
-         $tran->longtitude = $tmp[2];
-         $tran->expireTime = $tmp[3];
-         $tran->expireDate = $tmp[4];
-         $tran->qrType = $tmp[5];
+            $tran->hriId = $tmp[0];
+            $tran->latitude = $tmp[1];
+            $tran->longtitude = $tmp[2];
+            $tran->expireTime = $tmp[3];
+            $tran->expireDate = $tmp[4];
+            $tran->qrType = $tmp[5];
+         } else {
+            //2e9nt75yieo0bneyok13.794355100.32129211:50:2414/07/2020UNI_MQR
+            //HRi_ID, Latitude, Longitude, Expire_Time, Expire_Date, Code
+
+            // https://stackoverflow.com/questions/27650892/php-find-position-and-value-of-last-digit-in-string
+            if(preg_match_all('/\d+/', $qr, $numbers)){
+               $lastFullNum =      end($numbers[0]);               //eg. "2020"
+               $lastDigit =        substr($lastFullNum, -1);       //eg. "0"
+               $lastDigitPos =     strrpos($qr, $lastDigit, 0);    //eg. "54"
+            }
+
+            $qrTypePos = $lastDigitPos - strlen($qr) + 1;
+            $tran->qrType = substr($qr, $qrTypePos);
+            $dateLength = 10;
+            $tran->expireDate = substr($qr, $qrTypePos - $dateLength, $dateLength);
+            $timeLength = 8;
+            $tran->expireTime = substr($qr, $qrTypePos - $dateLength - $timeLength, $timeLength);
+            $hriIdLength = 18;
+            $tran->hriId = substr($qr, 0, $hriIdLength);
+            $latLongStr = substr($qr, $hriIdLength, strlen($qr) + $qrTypePos - $dateLength - $timeLength - $hriIdLength);
+            $lastPointPos = strpos($latLongStr, '.');
+            $tran->latitude = substr($latLongStr, 0, $lastPointPos + 7);
+            $tran->longtitude = substr($latLongStr, $lastPointPos + 7);
+         }
       }
    }
    private function isQRExpire(&$tran, &$error) {
