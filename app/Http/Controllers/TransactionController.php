@@ -60,7 +60,7 @@ class TransactionController extends Controller
          if ($error == null) $this->isQRExpire($tran, $error);
          $rtran = $this->insertTransactionDB($tran);
          // call thread to send data
-         //$this->sendTransactionRealAPI($tran, $person, $rtran->id);
+         $this->sendTransactionRealAPI($tran, $person, $rtran->id);
 
          if ($error == null) {
             $scan_time = \DateTime::createFromFormat('Y-m-d H:i:s', $tran->scanTime);
