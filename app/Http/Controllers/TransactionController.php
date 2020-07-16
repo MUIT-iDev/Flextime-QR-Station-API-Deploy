@@ -118,6 +118,7 @@ class TransactionController extends Controller
             $qr = str_replace('\000026', "", $qr);
          }
    
+         /*
          if (stripos($qr, "Enter")) {
             $tmp = explode("Enter", $qr);
             //\000026aaaaaaaaaaaaaa0003Enter13.793987Enter100.321535Enter14:24:55Enter19/05/2020EnterUNI_MQR
@@ -131,6 +132,11 @@ class TransactionController extends Controller
                $tran->qrType = $tmp[5];
             }
          } else {
+            */
+
+            if (stripos($qr, "Enter"))
+               $qr = str_replace("Enter", "", $qr);
+
             //2e9nt75yieo0bneyok13.794355100.32129211:50:2414/07/2020UNI_MQR
             //HRi_ID, Latitude, Longitude, Expire_Time, Expire_Date, Code
 
@@ -153,7 +159,7 @@ class TransactionController extends Controller
             $lastPointPos = strpos($latLongStr, '.');
             $tran->latitude = substr($latLongStr, 0, $lastPointPos + 7);
             $tran->longtitude = substr($latLongStr, $lastPointPos + 7);
-         }
+         //}
       }
    }
    private function isQRExpire(&$tran, &$error) {
