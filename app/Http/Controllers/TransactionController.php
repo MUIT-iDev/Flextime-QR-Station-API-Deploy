@@ -122,13 +122,14 @@ class TransactionController extends Controller
             $tmp = explode("Enter", $qr);
             //\000026aaaaaaaaaaaaaa0003Enter13.793987Enter100.321535Enter14:24:55Enter19/05/2020EnterUNI_MQR
             //HRi_ID, Latitude, Longitude, Expire_Time, Expire_Date, Code
-
-            $tran->hriId = $tmp[0];
-            $tran->latitude = $tmp[1];
-            $tran->longtitude = $tmp[2];
-            $tran->expireTime = $tmp[3];
-            $tran->expireDate = $tmp[4];
-            $tran->qrType = $tmp[5];
+            if (count($tmp) == 6) {
+               $tran->hriId = $tmp[0];
+               $tran->latitude = $tmp[1];
+               $tran->longtitude = $tmp[2];
+               $tran->expireTime = $tmp[3];
+               $tran->expireDate = $tmp[4];
+               $tran->qrType = $tmp[5];
+            }
          } else {
             //2e9nt75yieo0bneyok13.794355100.32129211:50:2414/07/2020UNI_MQR
             //HRi_ID, Latitude, Longitude, Expire_Time, Expire_Date, Code
