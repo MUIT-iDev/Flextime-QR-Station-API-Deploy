@@ -6,12 +6,13 @@ use GuzzleHttp\Client;
 use App\Traits\TransactionTrait;
 use App\Traits\PersonalTrait;
 use App\Traits\ConfigTrait;
+use App\Traits\TransactionRealThread;
 
 trait FlexAPI
 {
     use TransactionTrait, PersonalTrait, ConfigTrait;
 
-    private function getGuzzleHttpClient() {
+    public function getGuzzleHttpClient() {
         $domain = $this->getFlexDomain();
 
         // ERROR: curl_setopt_array(): cannot represent a stream of type Output as a STDIO FILE*
@@ -104,30 +105,35 @@ trait FlexAPI
 
         $client = $this->getGuzzleHttpClient();
 
+        try {
         // Send an request.
-        $response = $client->post(
-            "stationService/v1/onlineStatus/$stationId/$nonce", 
-            [
-                'json' => $data, 
-                'debug' => fopen('php://stderr', 'w'), 
-                'timeout' => 1, 
-                'headers' => [
-                    'User-Agent' => 'PHP/StationQR v.'.env('APP_VERSION').' ['.config('station.id').']',
+            $response = $client->post(
+                "stationService/v1/onlineStatus/$stationId/$nonce", 
+                [
+                    'json' => $data, 
+                    'debug' => fopen('php://stderr', 'w'), 
+                    'timeout' => 1, 
+                    'headers' => [
+                        'User-Agent' => 'PHP/StationQR v.'.env('APP_VERSION').' ['.config('station.id').']',
+                    ]
                 ]
-            ]
-        );
+            );
 
-        $resp_obj = json_decode($response->getBody()->getContents());
+            $resp_obj = json_decode($response->getBody()->getContents());
 
-        if ($resp_obj->status == 'OK') {
-            $data = $resp_obj->data;
-            if ($this->isRightResponseFromFlex($stationId, $nonce, $data->stationId, $data->nonce)) {
-                return $data->data;
+            if ($resp_obj->status == 'OK') {
+                $data = $resp_obj->data;
+                if ($this->isRightResponseFromFlex($stationId, $nonce, $data->stationId, $data->nonce)) {
+                    return $data->data;
+                }
+                else return null;
+
+            } else {
+                //throw new \Exception("API: <$api> ERROR=>{$resp_obj->exception}");
+                return null;
             }
-            else return null;
-
-        } else {
-            throw new \Exception("API: <$api> ERROR=>{$resp_obj->exception}");
+        } catch (\Exception $e) {
+            return null;
         }
     }
     private function getGeolocation() {
@@ -144,10 +150,10 @@ trait FlexAPI
         }
     }
 
-    private function getStationID() {
+    public function getStationID() {
         return base64_encode(config('station.id'));
     }
-    private function getNonce() {
+    public function getNonce() {
         return uniqid(mt_rand(), true);
     }
     private function getFlexDomain() {
@@ -160,52 +166,8 @@ trait FlexAPI
 
     // =========================== Guzzle for Async call ===========================
     public function sendTransactionRealAPI($tran, $person, $tran_id) {
-        $stationId = $this->getStationID();
-        $nonce = $this->getNonce();
-        
-        $data = $this->genTransactionForFlexRealtime($tran, $person);
-
-        $client = $this->getGuzzleHttpClient();
-
-        // Send an asynchronous request.
-        $promise = $client->postAsync(
-            "stationService/v1/setTimeStamp/$stationId/$nonce", 
-            ['json' => $data, 'debug' => fopen('php://stderr', 'w'), 'timeout' => 1]
-        )->then(
-            function ($res) {
-                return json_decode($res->getBody()->getContents());  
-            },
-            function (RequestException $e) {
-                $this->updateConfigDB("STATION_ONLINE", "false", null, null);
-            }
-        );
-        $flex_resp = $promise->wait();
-
-        if ($flex_resp->status == 'OK') {
-            $this->updateSendRealSuccessStatus($tran_id);
-        }
-    }
-    private function genTransactionForFlexRealtime($tran, $person) {
-        $tmp = explode(" ", $tran->scanTime);
-        return array(
-            "Real" => true,
-            "Data" => array(
-                array(
-                "CardId" => $tran->cardId,
-                "HRiId" => $tran->hriId,
-                "PID" => $person == null ? null : $person->pid,
-                "NameSurname" => $person == null ? null : $person->name.' '.$person->surname,
-                "Date" => $tmp[0],
-                "Time" => $tmp[1],
-                "DateTime" => $tran->scanTime,
-                "TimeDiffSec" => $tran->timeDiffSec,
-                "INOUT" => $tran->scanStatus,
-                "Detail" => $tran->scanDetail,
-                "Lat" => $tran->latitude,
-                "Long" => $tran->longtitude,
-                )
-            )
-        );
+        $th = new TransactionRealThread($tran, $person, $tran_id);
+        $th->start();
     }
 
     public function sendTransactionQueueAPI() {

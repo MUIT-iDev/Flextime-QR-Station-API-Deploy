@@ -34,10 +34,13 @@ $router->group(['prefix'=>'api/v1'], function() use($router) {
     $router->get('/transactions', 'TransactionController@home');
     $router->post('/transactions', 'TransactionController@create');
 
+    /*
     $router->get('/testx', function() use ($router) {
         $file_path = realpath(__DIR__.'/../../.secret/config.json');
         $json = json_decode(file_get_contents($file_path), true);
         
         return $json["station"]["name"].' '.$json["station"]["id"];
     });
+    */
+    $router->get('/testx', 'ScheduleController@test');
 });
