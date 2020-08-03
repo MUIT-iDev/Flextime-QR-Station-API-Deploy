@@ -6,7 +6,6 @@ use GuzzleHttp\Client;
 use App\Traits\TransactionTrait;
 use App\Traits\PersonalTrait;
 use App\Traits\ConfigTrait;
-use App\Traits\TransactionRealThread;
 
 trait FlexAPI
 {
@@ -24,26 +23,29 @@ trait FlexAPI
         // TEST GET
         //$request = new \GuzzleHttp\Psr7\Request('GET', "stationService/v1/onlineStatus/$stationId/$nonce");
         //$response = $client->send($request, ['debug' => fopen('php://stderr', 'w')]);
+        try {
+            $stationId = $this->getStationID();
+            $nonce = $this->getNonce();
+            $options[] = ['debug' => fopen('php://stderr', 'w')];
 
-        $stationId = $this->getStationID();
-        $nonce = $this->getNonce();
-        $options[] = ['debug' => fopen('php://stderr', 'w')];
+            $client = $this->getGuzzleHttpClient();
+            $response = $client->get("stationService/v1/$api/$stationId/$nonce", $options);
 
-        $client = $this->getGuzzleHttpClient();
-        $response = $client->get("stationService/v1/$api/$stationId/$nonce", $options);
+            $resp_obj = json_decode($response->getBody()->getContents());
+            //return json_encode($resp_obj->data->stationId); // for debug
 
-        $resp_obj = json_decode($response->getBody()->getContents());
-        //return json_encode($resp_obj->data->stationId); // for debug
+            if ($resp_obj->status == 'OK') {
+                $data = $resp_obj->data;
+                if ($this->isRightResponseFromFlex($stationId, $nonce, $data->stationId, $data->nonce)) {
+                    return $data->data;
+                }
+                else return null;
 
-        if ($resp_obj->status == 'OK') {
-            $data = $resp_obj->data;
-            if ($this->isRightResponseFromFlex($stationId, $nonce, $data->stationId, $data->nonce)) {
-                return $data->data;
+            } else {
+                throw new \Exception("API: <$api> ERROR=>{$resp_obj->exception}");
             }
-            else return null;
+        } catch (\Exception $e) {
 
-        } else {
-            throw new \Exception("API: <$api> ERROR=>{$resp_obj->exception}");
         }
     }
 
@@ -96,17 +98,16 @@ trait FlexAPI
     public function checkOnlineStatusAPI() {
         $stationId = $this->getStationID();
         $nonce = $this->getNonce();
-        
-        $data = array(
-            "geolocation" => $this->getGeolocation(),
-            "personalNo" => $this->getPersonalCount(),
-            "timestampNo" => $this->getTransactionCount()
-        );
-
-        $client = $this->getGuzzleHttpClient();
-
         try {
-        // Send an request.
+            $data = array(
+                "geolocation" => $this->getGeolocation(),
+                "personalNo" => $this->getPersonalCount(),
+                "timestampNo" => $this->getTransactionCount()
+            );
+
+            $client = $this->getGuzzleHttpClient();
+
+            // Send an request.
             $response = $client->post(
                 "stationService/v1/onlineStatus/$stationId/$nonce", 
                 [
@@ -166,8 +167,58 @@ trait FlexAPI
 
     // =========================== Guzzle for Async call ===========================
     public function sendTransactionRealAPI($tran, $person, $tran_id) {
-        $th = new TransactionRealThread($tran, $person, $tran_id);
-        $th->start();
+        try {
+            $stationId = $this->getStationID();
+            $nonce = $this->getNonce();
+            
+            $data = $this->genTransactionForFlexRealtime($tran, $person);
+
+            $client = $this->getGuzzleHttpClient();
+
+            // Send an asynchronous request.
+            $promise = $client->postAsync(
+                "stationService/v1/setTimeStamp/$stationId/$nonce", 
+                ['json' => $data, 'debug' => fopen('php://stderr', 'w'), 'timeout' => 1]
+            )->then(
+                function ($res) {
+                    $this->updateConfigDB("STATION_ONLINE", "true", null, null);
+                    return json_decode($res->getBody()->getContents());  
+                },
+                function ($res) {
+                    $this->updateConfigDB("STATION_ONLINE", "false", null, null);
+                    return json_decode(json_encode(array("status" => "Fail")));  
+                }
+            );
+            $flex_resp = $promise->wait();
+
+            if ($flex_resp->status == 'OK') {
+                $this->updateSendRealSuccessStatus($tran_id);
+            }
+        } catch (\Exception $e) {
+            throw new \Exception("sendTransactionRealAPI ERROR=> {$e->getMessage()}");
+        }
+    }
+    private function genTransactionForFlexRealtime($tran, $person) {
+        $tmp = explode(" ", $tran->scanTime);
+        return array(
+            "Real" => true,
+            "Data" => array(
+                array(
+                "CardId" => $tran->cardId,
+                "HRiId" => $tran->hriId,
+                "PID" => $person == null ? null : $person->pid,
+                "NameSurname" => $person == null ? null : $person->name.' '.$person->surname,
+                "Date" => $tmp[0],
+                "Time" => $tmp[1],
+                "DateTime" => $tran->scanTime,
+                "TimeDiffSec" => $tran->timeDiffSec,
+                "INOUT" => $tran->scanStatus,
+                "Detail" => $tran->scanDetail,
+                "Lat" => $tran->latitude,
+                "Long" => $tran->longtitude,
+                )
+            )
+        );
     }
 
     public function sendTransactionQueueAPI() {
