@@ -125,7 +125,7 @@ class ScheduleController extends Controller
         $is_sync_personal = $this->timeToSync($now, $personal_sync, intval($personal_period));
         $is_checkhand_flex = $this->timeToSync($now, $flex_sync, intval($flex_period));
 
-        if ($is_checkhand_flex) {
+        if ($is_admin || (!$is_admin && $is_checkhand_flex)) {
             $result[] = $this->checkhandWithFlexServer();
         }
 
