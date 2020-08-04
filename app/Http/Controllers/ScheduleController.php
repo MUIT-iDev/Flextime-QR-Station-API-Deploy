@@ -23,7 +23,7 @@ class ScheduleController extends Controller
 
     public function test() {
         $resp = $this->checkOnlineStatusAPI();
-        return response()->json($resp == null);
+        return response()->json($resp);
     }
 
     public function checkConnectionOnline() {

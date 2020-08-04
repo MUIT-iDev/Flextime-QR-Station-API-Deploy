@@ -48,9 +48,20 @@ trait ConfigTrait
 
     public function getStationActiveStatus() {
       $config = Config::where('name', 'STATION_ACTIVE')->first();
-      if ($config != null)
-         return $config->value == 'true';
-      else return false;
+      if ($config != null) {
+         if ($config->value == 'true') {
+          $cc = Config::where('name', 'OUT_OF_SERVICE')->first();
+          if ($cc != null) {
+            if ($cc->value == 'true')
+              return 'OutOfService';
+            else return 'Active';
+          } 
+          else return 'Active';
+          
+         } else if ($config->value == 'false')
+            return 'Inactive';
+      }
+      else return 'Inactive';
     }
 
     public function getConfig4GUI() {
