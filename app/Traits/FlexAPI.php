@@ -144,6 +144,12 @@ trait FlexAPI
             $options[] = [
                 'debug' => fopen('php://stderr', 'w'),
                 'headers' => [
+                    'Cache-Control' => 'no-cache',
+                    'Host' => 'flextime.qr.station',
+                    'User-Agent' => 'Lumen-API-MU',
+                    'Accept' => '*//*',
+                    'Accept-Encoding' => 'gzip, deflate, br',
+                    'Connection' => 'keep-alive',
                     'Origin' => 'https://ip-api.com',
                 ]
             ];
@@ -155,7 +161,7 @@ trait FlexAPI
                 'debug' => fopen('php://stderr', 'w')
             ];
             $url = 'https://demo.ip-api.com/json/?fields=status,message,continent,continentCode,country,countryCode,region,regionName,city,district,zip,lat,lon,timezone,offset,currency,isp,org,as,asname,reverse,mobile,proxy,hosting,query';
-
+            
             $response = $client->get($url, $options);
 
             $resp_obj = $response->getBody()->getContents();

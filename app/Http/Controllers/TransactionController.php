@@ -74,6 +74,7 @@ class TransactionController extends Controller
                   'scanTime' => $tran->scanTime,
                   'regisDate' => $scan_time->format('d M Y'),
                   'regisTime' => $scan_time->format('H:i:s'),
+                  'qr' => $request->qr,
                ),
                'error' => $error,
             );
@@ -84,6 +85,7 @@ class TransactionController extends Controller
                'message' => null,
                'context' => $error,
                'error' => $this->getErrorCode($error),
+               'qr' => $request->qr,
             );
          }
       } catch (\Exception $e) {
@@ -92,6 +94,7 @@ class TransactionController extends Controller
             'message' => null,
             'context' => $e->getMessage(),
             'error' => $this->getErrorCode($e->getMessage()),
+            'qr' => $request->qr,
          );
       }
 
