@@ -46,7 +46,7 @@ class ScheduleController extends Controller
                     'apiVersion' => $api_version,
                     'stationName' => $station_name,
                     'onlineStatus' => $online_status,
-                    'stationActive' => $station_active,
+                    'stationMode' => $station_active,
                     'peopleOnStation' => $person_on_station_count,
                     'transactionRecord' => $transaction_on_station_count,
                     'limitRecord' => $limit_record

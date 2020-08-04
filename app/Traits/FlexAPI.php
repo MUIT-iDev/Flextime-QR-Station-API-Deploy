@@ -104,7 +104,7 @@ trait FlexAPI
                 "personalNo" => $this->getPersonalCount(),
                 "timestampNo" => $this->getTransactionCount()
             );
-
+            //return $data;
             $client = $this->getGuzzleHttpClient();
 
             // Send an request.
@@ -139,9 +139,23 @@ trait FlexAPI
     }
     private function getGeolocation() {
         try {
+            /*
+            $client = new \GuzzleHttp\Client(['verify' => false]);
+            $options[] = [
+                'debug' => fopen('php://stderr', 'w'),
+                'headers' => [
+                    'Origin' => 'https://ip-api.com',
+                ]
+            ];
+            $url = 'https://demo.ip-api.com/json/?fields=status,message,continent,continentCode,country,countryCode,region,regionName,city,district,zip,lat,lon,timezone,offset,currency,isp,org,as,asname,reverse,mobile,proxy,hosting,query';
+            */
+
             $client = new \GuzzleHttp\Client();
-            $options[] = ['debug' => fopen('php://stderr', 'w')];
-            $url = 'http://ip-api.com/json/?fields=status,message,continent,continentCode,country,countryCode,region,regionName,city,district,zip,lat,lon,timezone,offset,currency,isp,org,as,asname,reverse,mobile,proxy,hosting,query';
+            $options[] = [
+                'debug' => fopen('php://stderr', 'w')
+            ];
+            $url = 'https://demo.ip-api.com/json/?fields=status,message,continent,continentCode,country,countryCode,region,regionName,city,district,zip,lat,lon,timezone,offset,currency,isp,org,as,asname,reverse,mobile,proxy,hosting,query';
+
             $response = $client->get($url, $options);
 
             $resp_obj = $response->getBody()->getContents();
