@@ -45,7 +45,7 @@ trait FlexAPI
                 throw new \Exception("API: <$api> ERROR=>{$resp_obj->exception}");
             }
         } catch (\Exception $e) {
-
+            return null;
         }
     }
 

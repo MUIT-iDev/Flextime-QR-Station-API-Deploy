@@ -200,7 +200,7 @@ class ScheduleController extends Controller
         try {
             $last_update_Flex = $this->getConfigLastUpdateAPI();
             $last_update_DB = $this->getConfigLastUpdateDB();
-            $set_new_config = $last_update_Flex != $last_update_DB;
+            $set_new_config = $last_update_Flex != null && $last_update_Flex != $last_update_DB;
 
             DB::beginTransaction();
             if ($set_new_config) {
@@ -237,8 +237,10 @@ class ScheduleController extends Controller
         $result = [];
         try {
             $last_update_Flex = $this->getPersonalLastUpdateAPI();
+            //return $last_update_Flex;
             $last_update_DB = $this->getPersonalLastUpdateDB();
-            $set_person = $last_update_Flex != $last_update_DB;
+            //return $last_update_DB;
+            $set_person = $last_update_Flex != null && $last_update_Flex != $last_update_DB;
 
             DB::beginTransaction();
             if ($set_person) {
