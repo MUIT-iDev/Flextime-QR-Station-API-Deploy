@@ -21,6 +21,7 @@ return [
     */
     'id' => $json["station"]["id"],
     'mode' => $json["server"]["mode"],
+    'name' => $json["station"]["name"],
     'qas_server' => $json["server"]["qas_site"],
     'prd_server' => $json["server"]["prd_site"],
     'qrstatus_unreg' => 'unreg',
