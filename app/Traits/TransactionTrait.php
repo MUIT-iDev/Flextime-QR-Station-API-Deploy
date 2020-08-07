@@ -73,7 +73,7 @@ trait TransactionTrait
                 DB::raw('SUBSTRING_INDEX(scanTime, " ", 1) AS Date'),
                 DB::raw('SUBSTRING_INDEX(SUBSTRING_INDEX(scanTime, " ", 2), " ", -1) AS Time'),
                 'scanTime as DateTime',
-                'timeDiffSec as TimeDiffSec',
+                DB::raw('IFNULL(timeDiffSec, -1) as TimeDiffSec'),
                 'scanStatus as INOUT',
                 'scanDetail as Detail',
                 'latitude as Lat',
