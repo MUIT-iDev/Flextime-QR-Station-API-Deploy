@@ -241,54 +241,40 @@ trait FlexAPI
         );
     }
 
-    public function sendTransactionQueueAPI() {
-        $stationId = $this->getStationID();
-        $nonce = $this->getNonce();
-        
-        $data = $this->genTransactionForFlexQueue($tran_id_list);
+    public function sendTransactionQueueAPI($tran_id_list) {
+        try {
+            $stationId = $this->getStationID();
+            $nonce = $this->getNonce();
+            
+            $data = $this->genTransactionForFlexQueue($tran_id_list);
 
-        $client = $this->getGuzzleHttpClient();
+            $client = $this->getGuzzleHttpClient();
 
-        // Send an asynchronous request.
-        $promise = $client->postAsync(
-            "stationService/v1/setTimeStamp/$stationId/$nonce", 
-            ['json' => $data, 'debug' => fopen('php://stderr', 'w'), 'timeout' => 1]
-        )->then(
-            function ($res) {
-                return json_decode($res->getBody()->getContents());  
-            },
-            function (RequestException $e) {
-                $this->updateConfigDB("STATION_ONLINE", "false", null, null);
+            // Send an asynchronous request.
+            $promise = $client->postAsync(
+                "stationService/v1/setTimeStamp/$stationId/$nonce", 
+                ['json' => $data, 'debug' => fopen('php://stderr', 'w'), 'timeout' => 1]
+            )->then(
+                function ($res) {
+                    return json_decode($res->getBody()->getContents());  
+                },
+                function ($res) {
+                    $this->updateConfigDB("STATION_ONLINE", "false", null, null);
+                }
+            );
+            $flex_resp = $promise->wait();
+
+            if ($flex_resp->status == 'OK') {
+                $this->updateSendQueueSuccessStatus($tran_id_list);
             }
-        );
-        $flex_resp = $promise->wait();
-
-        if ($flex_resp->status == 'OK') {
-            $this->updateSendQueueSuccessStatus($tran_id_list);
+        } catch (\Exception $e) {
+            throw new \Exception("sendTransactionQueueAPI ERROR=> {$e->getMessage()}");
         }
     }
-    private function genTransactionForFlexQueue(&$tran_id_list) {
-        return array();
-
-        $tmp = explode(" ", $tran->scanTime);
+    private function genTransactionForFlexQueue($tran_id_list) {
         return array(
             "Real" => false,
-            "Data" => array(
-                array(
-                "CardId" => $tran->cardId,
-                "HRiId" => $tran->hriId,
-                "PID" => $person == null ? null : $person->pid,
-                "NameSurname" => $person == null ? null : $person->name.' '.$person->surname,
-                "Date" => $tmp[0],
-                "Time" => $tmp[1],
-                "DateTime" => $tran->scanTime,
-                "TimeDiffSec" => $tran->timeDiffSec,
-                "INOUT" => $tran->scanStatus,
-                "Detail" => $tran->scanDetail,
-                "Lat" => $tran->latitude,
-                "Long" => $tran->longtitude,
-                )
-            )
+            "Data" => $this->getTransactionOfflineQueueData($tran_id_list)
         );
     }
 

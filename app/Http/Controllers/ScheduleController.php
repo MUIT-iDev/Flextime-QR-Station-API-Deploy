@@ -22,8 +22,14 @@ class ScheduleController extends Controller
     }
 
     public function test() {
-        $resp = $this->checkOnlineStatusAPI();
-        return response()->json($resp);
+        //$resp = $this->checkOnlineStatusAPI();
+
+        $id_list = $this->getTransactionOfflineQueue();
+        //if (count($id_list) > 0) {
+            $resp = $this->getTransactionOfflineQueueData($id_list);
+        //}
+
+        return response()->json('test');
     }
 
     public function checkConnectionOnline() {
@@ -161,10 +167,11 @@ class ScheduleController extends Controller
                     "value": "true"
                 }');
 
-                //$trans_offline_queue = $this->getTransactionOfflineQueue();
-                //if (count($trans_offline_queue) > 0) {
-                    //create thread to send data
-                //}
+                $trans_offline_queue = $this->getTransactionOfflineQueue();
+                if (count($trans_offline_queue) > 0) {
+                    $result[] = '<br />SEND OFFLINE Data to Flex '.count($trans_offline_queue).' record(s).<br />';
+                    $this->sendTransactionQueueAPI($trans_offline_queue);
+                }
             } else {
                 $configs[] = json_decode('{
                     "key": "STATION_ONLINE",

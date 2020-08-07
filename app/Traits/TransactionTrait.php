@@ -60,7 +60,31 @@ trait TransactionTrait
     }
 
     public function getTransactionOfflineQueue() {
-        return Transaction::select('id')->where('sendStatus', '=', false)->get();
+        return Transaction::where('sendStatus', '=', false)->pluck('id')->toArray();
     }
+    public function getTransactionOfflineQueueData($tran_id_list) {
+        $itranRecords = Transaction::whereIn('transactions.id', $tran_id_list)
+            ->leftjoin('personals as ps','ps.hriId', '=', 'transactions.hriId')
+            ->select(
+                'ps.cardId as CardId',
+                'ps.hriId as HRiId',
+                'ps.pid as PID',
+                DB::raw('CONCAT(ps.name, " ", ps.surname) as NameSurname'),
+                DB::raw('SUBSTRING_INDEX(scanTime, " ", 1) AS Date'),
+                DB::raw('SUBSTRING_INDEX(SUBSTRING_INDEX(scanTime, " ", 2), " ", -1) AS Time'),
+                'scanTime as DateTime',
+                'timeDiffSec as TimeDiffSec',
+                'scanStatus as INOUT',
+                'scanDetail as Detail',
+                'latitude as Lat',
+                'longtitude as Long'
+            )
+            ->orderBy('scanTime', 'ASC')
+            ->get();
 
+        return $itranRecords;
+    }
+    public function updateSendQueueSuccessStatus($tran_id_list) {
+        Transaction::whereIn('id', $tran_id_list)->update(array('sendStatus' => true, 'sendDate' => date('Y-m-d H:i:s')));
+    }
 }

@@ -59,7 +59,6 @@ class TransactionController extends Controller
          $person = $this->getPerson($tran, $error);
          if ($error == null) $this->isQRExpire($tran, $error);
          $rtran = $this->insertTransactionDB($tran);
-         // call thread to send data
          $this->sendTransactionRealAPI($tran, $person, $rtran->id);
 
          if ($error == null) {
