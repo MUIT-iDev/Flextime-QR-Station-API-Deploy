@@ -19,7 +19,7 @@ class CreateTransactionsTable extends Migration
             $table->uuid('id')->unique();
             $table->string('cardId', 30);
             $table->dateTime('scanTime');
-            $table->string('scanDetail');
+            $table->string('scanDetail', 1000);
             $table->string('hriId', 50)->nullable();
             $table->string('latitude', 30)->nullable();
             $table->string('longtitude', 30)->nullable();
