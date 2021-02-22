@@ -120,22 +120,33 @@ class TransactionController extends Controller
             $qr = str_replace('\000026', "", $qr);
          }
    
-         /*
-         if (stripos($qr, "Enter")) {
-            $tmp = explode("Enter", $qr);
-            //\000026aaaaaaaaaaaaaa0003Enter13.793987Enter100.321535Enter14:24:55Enter19/05/2020EnterUNI_MQR
-            //HRi_ID, Latitude, Longitude, Expire_Time, Expire_Date, Code
-            if (count($tmp) == 6) {
+         if (stripos($qr, "|")) {
+            $tmp = explode("|", $qr);
+            //0k9j8hr0xv0izvshe6|13.836538|100.375574|11:51:28|18/02/2021|พนักงานทั่วไป|นางสาว|Staff01 Testuser01||นางสาว|Staff01 Testuser01|ไม่ระบุสังกัด|No Organization|||N|FAC|||UNI_MQR
+            //HRi_ID, Latitude, Longitude, Expire_Time, Expire_Date, Position, title, fullname thai, title eng, full name eng, department, xx, xx, xx, xx, xx, xx, xx, xx, Code
+            /*
+            Full name TH
+            Full name EN
+            Faculty TH
+            Faculty EN
+            Virtual Card Expire TH
+            Virtual Card Expire EN
+            Alumni member status
+            Faculty Code
+            Reserve field
+            Reserve field
+            UAPP Reserve field
+            */
+
+            if (chars($tmp) > 6) {
                $tran->hriId = $tmp[0];
                $tran->latitude = $tmp[1];
                $tran->longtitude = $tmp[2];
                $tran->expireTime = $tmp[3];
                $tran->expireDate = $tmp[4];
-               $tran->qrType = $tmp[5];
+               $tran->qrType = "UNI_MQR";//$tmp[19];
             }
          } else {
-            */
-
             if (stripos($qr, "Enter"))
                $qr = str_replace("Enter", "", $qr);
 
@@ -161,7 +172,7 @@ class TransactionController extends Controller
             $lastPointPos = strpos($latLongStr, '.');
             $tran->latitude = substr($latLongStr, 0, $lastPointPos + 7);
             $tran->longtitude = substr($latLongStr, $lastPointPos + 7);
-         //}
+         }
       }
    }
    private function isQRExpire(&$tran, &$error) {
