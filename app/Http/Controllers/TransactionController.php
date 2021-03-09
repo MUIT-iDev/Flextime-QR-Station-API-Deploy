@@ -138,7 +138,7 @@ class TransactionController extends Controller
             UAPP Reserve field
             */
 
-            if (chars($tmp) > 6) {
+            if (count($tmp) > 6) {
                $tran->hriId = $tmp[0];
                $tran->latitude = $tmp[1];
                $tran->longtitude = $tmp[2];
